@@ -2,6 +2,7 @@ package org.amanda.controller;
 
 import org.amanda.model.Student;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,12 +10,15 @@ public class AttendanceController {
     private List<Student> roster;
     List<Student> morningRoster = new ArrayList<>();
     List<Student> afternoonRoster = new ArrayList<>();
-    List<String> morningPresent = new ArrayList<>();
-    List<String> afternoonPresent = new ArrayList<>();
+
+//    List<String> morningPresent = new ArrayList<>();
+//    List<String> afternoonPresent = new ArrayList<>();
 
     public AttendanceController() {
         roster = new ArrayList<>();
     }
+
+    /* ENROLLMENT METHODS */
 
     // Add a new student to the roster (create new student)
     public void addStudent(String name, boolean morning, boolean afternoon) {
@@ -59,9 +63,30 @@ public class AttendanceController {
         }
     }
 
+    // Get student by name
+    public String getStudentByName(String name) {
+        for (Student student : roster) {
+            if (student.getName().equals(name)) {
+                return student.toString();
+            }
+        }
+        return "Student not found";
+    }
+
     // Get all students enrolled in Y-Club (both sessions)
     public List<Student> getAllStudents() {
-        return roster; // Change with toString method
+        return roster;
+    }
+
+    public void printStudentList(List<Student> roster) {
+        StringBuilder studentsInfo = new StringBuilder();
+        for (Student student : roster) {
+            studentsInfo.append(student.toString());
+        }
+        String result = studentsInfo.toString();
+
+        result = result.replaceFirst(", Name:", "Name:");
+        System.out.println(result);
     }
 
     // Get all students enrolled in morning session
@@ -74,65 +99,53 @@ public class AttendanceController {
         return afternoonRoster;
     }
 
-    /* ATTENDANCE METHODS */
+    /* ATTENDANCE MARKING METHODS */
+
+    // CURRENT ISSUE: IT LETS YOU MARK A NON MORNING OR NON AFTERNOON STUDENT ABSENT EVEN IF THEY
+    // AREN'T ENROLLED IN THAT SESSION.
 
     // Mark a student as present for morning session
-    public void markPresentMorning(String name) {
+    public void markPresentMorning(LocalDate date, String name) {
         for (Student student : roster) {
             if (student.getName().equals(name) && student.isMorning()) {
-                student.setPresent(true);
-                student.setAbsent(false);
-                morningPresent.add(name);
-                return;
+                student.markMorningAttendance(date, true);
             }
         }
+        System.out.println(name + " marked present for morning session on " + date);
     }
 
     // Mark a student as absent for morning session
-    public void markAbsentMorning(String name) {
+    public void markAbsentMorning(LocalDate date, String name) {
         for (Student student : roster) {
             if (student.getName().equals(name) && student.isMorning()) {
-                student.setAbsent(true);
-                student.setPresent(false);
-                // If student name was present on the morningPresent attendance list, then remove them
-                name = student.getName();
-                if (morningPresent.contains(name)) {
-                    morningPresent.remove(name);
-                }
+                student.markMorningAttendance(date, false);
             }
-            return;
         }
+        System.out.println(name + " marked absent for morning session on " + date);
     }
 
 
     // Mark a student as present for afternoon session
-    public void markPresentAfternoon(String name) {
+    public void markPresentAfternoon(LocalDate date, String name) {
         for (Student student : roster) {
             if (student.getName().equals(name) && student.isAfternoon()) {
-                student.setPresent(true);
-                student.setAbsent(false);
-                afternoonPresent.add(name);
-                return;
+                student.markAfternoonAttendance(date, true);
             }
         }
+        System.out.println(name + " marked present for afternoon session on " + date);
     }
 
     // Mark a student as absent for afternoon session
-    public void markAbsentAfternoon(String name) {
+    public void markAbsentAfternoon(LocalDate date, String name) {
         for (Student student : roster) {
             if (student.getName().equals(name) && student.isAfternoon()) {
-                student.setAbsent(true);
-                student.setPresent(false);
-                name = student.getName();
-                if (afternoonPresent.contains(name)) {
-                    afternoonPresent.remove(name);
-                }
-                return;
+                student.markAfternoonAttendance(date, false);
             }
         }
+        System.out.println(name + " marked absent for afternoon session on " + date);
     }
 
-    /* ENROLLMENT COUNT METHODS */
+    /* ENROLLMENT COUNTING METHODS */
 
     // Count total enrolled MORNING
     public String morningTotal() {
@@ -144,39 +157,89 @@ public class AttendanceController {
         return "Students enrolled in afternoon session: " + afternoonRoster.size();
     }
 
-    // Count total enrolled in the MORNING AND AFTERNOON (repeat students)
-    public String grandEnrollmentTotal() {
+    // Count total enrolled in the MORNING AND AFTERNOON (WAIT! WILL repeat students)
+    public String grandEnrollmentTotalAMPM() {
         int total = morningRoster.size() + afternoonRoster.size();
         return "Total students enrolled in both morning and afternoon sessions: " + total;
     }
 
-    /* ATTENDANCE COUNT METHODS */
+    // Count total students for MORNING AND AFTERNOON (UNIQUE) not repeating any students who attend both sessions:
+    public String grandEnrollmentUnique() {
+        return "Total students enrolled: " + roster.size();
+    }
+
+    /* ATTENDANCE COUNTING METHODS */
 
     // Count total PRESENT in morning session
-    public String getTotalPresentMorning() {
-        int total = morningPresent.size();
-        return "Total present in morning: " + total;
+public int getTotalPresentMorning(LocalDate date) {
+    int total = 0;
+    for (Student student : roster) {
+        Boolean present = student.getMorningAttendance(date);
+        if (student.isMorning() && present != null && present) {
+            total++;
+        }
+    }
+    return total;
+}
+
+    // Count total present in AFTERNOON session
+    public int getTotalPresentAfternoon(LocalDate date) {
+        int total = 0;
+        for (Student student : roster) {
+            Boolean present = student.getAfternoonAttendance(date);
+            if (present != null && present) {
+                total++;
+            }
+        }
+        return total;
     }
 
-    // Count total PRESENT in afternoon session
-    public String getTotalPresentAfternoon() {
-        int total = afternoonPresent.size();
-        return "Total present in afternoon: " + total;
+    // Total students ABSENT morning
+    public int getTotalAbsentMorning(LocalDate date) {
+        int total = 0;
+        for (Student student : roster) {
+            Boolean present = student.getMorningAttendance(date);
+            if (student.isAfternoon() && present != null && !present) {
+                total++;
+            }
+        }
+        return total;
     }
 
-    // Return students present in  morning
-    public List<String> getMorningPresent() {
-        return morningPresent;
+    // Total students ABSENT afternoon
+    public int getTotalAbsentAfternoon(LocalDate date) {
+        int total = 0;
+        for (Student student : roster) {
+            Boolean present = student.getAfternoonAttendance(date);
+            if (student.isAfternoon() && present != null && !present) {
+                total++;
+            }
+        }
+        return total;
     }
 
-    public List<String> getAfternoonPresent() {
-        return afternoonPresent;
+    // Return names of students present in morning session for a specific date
+    public List<String> getMorningPresent(LocalDate date) {
+        List<String> presentStudents = new ArrayList<>();
+        for (Student student : roster) {
+            Boolean present = student.getMorningAttendance(date);
+            if (present != null && present) {
+                presentStudents.add(student.getName());
+            }
+        }
+        return presentStudents;
     }
 
-    // Count total present MORNING AND AFTERNOON (UNIQUE) not repeating any students who attend both sessions:
-//    public String grandAttendanceUnique() {
-//        int total = 0;
-//
-//    }
+    // Return names of students present in afternoon session for a specific date
+    public List<String> getAfternoonPresent(LocalDate date) {
+        List<String> presentStudents = new ArrayList<>();
+        for (Student student : roster) {
+            Boolean present = student.getAfternoonAttendance(date);
+            if (present != null && present) {
+                presentStudents.add(student.getName());
+            }
+        }
+        return presentStudents;
+    }
 
 }
