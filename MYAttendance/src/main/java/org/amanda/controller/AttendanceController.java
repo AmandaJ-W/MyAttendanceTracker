@@ -21,8 +21,8 @@ public class AttendanceController {
     /* ENROLLMENT METHODS */
 
     // Add a new student to the roster (create new student)
-    public void addStudent(String name, boolean morning, boolean afternoon) {
-        roster.add(new Student(name, morning, afternoon));
+    public void addStudent(int id, String name, boolean morning, boolean afternoon) {
+        roster.add(new Student(id, name, morning, afternoon));
         for (Student student : roster) {
             if (student.getName().equals(name) && student.isMorning() && student.isAfternoon()) {
                 morningRoster.add(student);

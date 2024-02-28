@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Student {
+    private int id;
     private String name;
 
     /* Enrollment */
@@ -20,7 +21,8 @@ public class Student {
     private boolean absentMorning;
     private boolean absentAfternoon;
 
-    public Student(String name, boolean morning, boolean afternoon) {
+    public Student(int id, String name, boolean morning, boolean afternoon) {
+        this.id = id;
         this.name = name;
         this.morning = morning;
         this.afternoon = afternoon;
